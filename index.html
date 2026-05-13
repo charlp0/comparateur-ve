@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+<meta name="theme-color" content="#0a0a0a" />
+<title>Comparateur VE — Aide à la décision</title>
+<meta name="description" content="Comparateur de voitures électriques avec scoring personnalisé et calculateur TCO Peugeot 3008 vs VE." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter','system-ui','sans-serif'] },
+      colors: {
+        bg: '#0a0a0a',
+        surface: '#141414',
+        surface2: '#1c1c1c',
+        line: '#2a2a2a',
+        ink: '#f5f5f5',
+        muted: '#a1a1aa',
+        accent: '#00ff88',
+        accent2: '#00d4ff',
+        warn: '#ffaa00',
+        danger: '#ff3366',
+      },
+      animation: {
+        'fade-up': 'fadeUp .5s ease-out both',
+        'pulse-glow': 'pulseGlow 2.5s ease-in-out infinite',
+        'shimmer': 'shimmer 2s linear infinite',
+      },
+      keyframes: {
+        fadeUp: { '0%': { opacity: 0, transform: 'translateY(12px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+        pulseGlow: { '0%,100%': { boxShadow: '0 0 30px rgba(0,255,136,.15)' }, '50%': { boxShadow: '0 0 60px rgba(0,255,136,.35)' } },
+        shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+      }
+    }
+  }
+}
+</script>
+<style>
+  html, body { background: #0a0a0a; color: #f5f5f5; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+  body { background-image: radial-gradient(circle at 50% 0%, rgba(0,255,136,.06), transparent 60%), radial-gradient(circle at 90% 80%, rgba(0,212,255,.04), transparent 50%); background-attachment: fixed; }
+  .glass { background: rgba(20,20,20,.7); backdrop-filter: blur(20px) saturate(120%); -webkit-backdrop-filter: blur(20px) saturate(120%); border: 1px solid rgba(255,255,255,.06); }
+  .card-hover { transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
+  .card-hover:hover { transform: translateY(-2px); border-color: rgba(0,255,136,.3); box-shadow: 0 10px 40px rgba(0,255,136,.08); }
+  .grad-text { background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .grad-bg { background: linear-gradient(135deg, rgba(0,255,136,.15) 0%, rgba(0,212,255,.08) 100%); }
+  .score-bar { background: linear-gradient(90deg, #00ff88, #00d4ff); height: 6px; border-radius: 999px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+  .score-bar-bg { background: rgba(255,255,255,.06); border-radius: 999px; overflow: hidden; }
+  .tab-active { background: rgba(0,255,136,.12); color: #00ff88; border-color: rgba(0,255,136,.3); }
+  input[type="range"] { -webkit-appearance: none; appearance: none; background: transparent; height: 24px; }
+  input[type="range"]::-webkit-slider-runnable-track { background: rgba(255,255,255,.08); height: 4px; border-radius: 999px; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #00ff88; border-radius: 999px; margin-top: -8px; box-shadow: 0 0 12px rgba(0,255,136,.5); cursor: grab; }
+  input[type="range"]::-moz-range-track { background: rgba(255,255,255,.08); height: 4px; border-radius: 999px; }
+  input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: #00ff88; border-radius: 999px; border: none; box-shadow: 0 0 12px rgba(0,255,136,.5); cursor: grab; }
+  input[type="number"] { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); color: #f5f5f5; padding: 10px 14px; border-radius: 10px; width: 100%; font-size: 16px; font-weight: 500; }
+  input[type="number"]:focus { outline: none; border-color: rgba(0,255,136,.5); box-shadow: 0 0 0 3px rgba(0,255,136,.15); }
+  .podium-1 { background: linear-gradient(180deg, rgba(0,255,136,.18), rgba(0,255,136,.02)); border: 1px solid rgba(0,255,136,.35); }
+  .podium-2 { background: linear-gradient(180deg, rgba(0,212,255,.12), rgba(0,212,255,.02)); border: 1px solid rgba(0,212,255,.25); }
+  .podium-3 { background: linear-gradient(180deg, rgba(255,170,0,.10), rgba(255,170,0,.02)); border: 1px solid rgba(255,170,0,.2); }
+  .modal-backdrop { background: rgba(0,0,0,.85); backdrop-filter: blur(8px); }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  details summary { list-style: none; cursor: pointer; }
+  details summary::-webkit-details-marker { display: none; }
+  details[open] .chev { transform: rotate(180deg); }
+  .chev { transition: transform .25s ease; }
+  @media (max-width: 480px) {
+    h1 { font-size: 2rem !important; }
+    .hero-sub { font-size: .95rem !important; }
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="sticky top-0 z-40 glass border-b border-line">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-9 h-9 rounded-xl grad-bg flex items-center justify-center text-lg">⚡</div>
+      <div>
+        <div class="text-sm font-bold leading-tight">Comparateur VE</div>
+        <div class="text-[10px] text-muted leading-tight uppercase tracking-widest">Aide à la décision</div>
+      </div>
+    </div>
+    <nav class="flex gap-1 text-xs">
+      <button onclick="switchTab('compare')" id="tab-compare" class="tab-active px-3 py-2 rounded-lg border border-transparent font-semibold transition">Comparer</button>
+      <button onclick="switchTab('tco')" id="tab-tco" class="px-3 py-2 rounded-lg border border-transparent text-muted font-semibold transition">TCO 3008</button>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 pb-20">
+
+  <!-- HERO -->
+  <section class="pt-10 pb-8 text-center animate-fade-up">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-muted mb-5">
+      <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+      Mis à jour mai 2026
+    </div>
+    <h1 class="text-4xl md:text-5xl font-black tracking-tight leading-[1.05] mb-4">
+      Choisir le bon<br/>
+      <span class="grad-text">véhicule électrique</span>
+    </h1>
+    <p class="hero-sub text-muted max-w-md mx-auto text-base leading-relaxed">
+      11 modèles comparés. Scoring personnalisable selon tes priorités. Calculateur TCO contre ta Peugeot 3008 actuelle.
+    </p>
+  </section>
+
+  <!-- TAB: COMPARATEUR -->
+  <section id="section-compare" class="space-y-6">
+
+    <!-- Pondération -->
+    <div class="glass rounded-2xl p-5">
+      <details>
+        <summary class="flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🎛️</span>
+              <h2 class="font-bold text-lg">Tes priorités</h2>
+            </div>
+            <p class="text-xs text-muted mt-1">Ajuste les curseurs, le classement se recalcule en temps réel</p>
+          </div>
+          <svg class="chev w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+        </summary>
+        <div class="mt-5 space-y-4" id="weights-panel"></div>
+        <button onclick="resetWeights()" class="mt-4 w-full py-2.5 text-xs font-semibold text-muted hover:text-ink rounded-lg border border-line hover:border-white/20 transition">↻ Réinitialiser</button>
+      </details>
+    </div>
+
+    <!-- Podium -->
+    <div>
+      <h2 class="text-xs uppercase tracking-widest text-muted mb-3 px-1">🏆 Podium</h2>
+      <div id="podium" class="grid grid-cols-3 gap-2"></div>
+    </div>
+
+    <!-- Cards -->
+    <div>
+      <div class="flex items-center justify-between mb-3 px-1">
+        <h2 class="text-xs uppercase tracking-widest text-muted">Classement complet</h2>
+        <span class="text-[10px] text-muted">Touche pour voir le détail</span>
+      </div>
+      <div id="cards-list" class="space-y-3"></div>
+    </div>
+
+    <!-- Légende -->
+    <div class="glass rounded-2xl p-5">
+      <h3 class="font-bold mb-3 text-sm flex items-center gap-2"><span>ℹ️</span> Notes méthodologiques</h3>
+      <ul class="text-xs text-muted space-y-2 leading-relaxed">
+        <li>• <span class="text-ink">LOA estimée 48 mois / 20 000 km/an</span> — les offres officielles sont souvent en 37-49 mois / 40-45k km, ajustées au prorata.</li>
+        <li>• <span class="text-ink">XPeng = pas de bonus écologique</span> (production hors UE).</li>
+        <li>• <span class="text-ink">Tesla Model Y Phase 1</span> = devis réel reçu (350€/mois, déstockage).</li>
+        <li>• Prix mensuels indicatifs, à confirmer en concession.</li>
+      </ul>
+    </div>
+
+  </section>
+
+  <!-- TAB: TCO -->
+  <section id="section-tco" class="space-y-6 hidden">
+
+    <div class="glass rounded-2xl p-5">
+      <h2 class="font-bold text-lg mb-1 flex items-center gap-2"><span>📊</span> Coût total sur 4 ans</h2>
+      <p class="text-xs text-muted mb-5">Peugeot 3008 essence (gardée) vs VE neuve en LOA</p>
+
+      <div class="space-y-5">
+        <!-- Inputs section -->
+        <div class="space-y-4">
+          <h3 class="text-xs uppercase tracking-widest text-muted">⚙️ Paramètres</h3>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Km / an</label>
+              <input type="number" id="kmYear" value="20000" min="0" step="1000" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Durée (années)</label>
+              <input type="number" id="years" value="4" min="1" step="1" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Peugeot inputs -->
+        <div class="bg-white/[.02] rounded-xl p-4 border border-white/5">
+          <h3 class="text-sm font-bold mb-3 flex items-center gap-2"><span>⛽</span> Peugeot 3008 (2019)</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Valeur actuelle (€)</label>
+              <input type="number" id="peuValueNow" value="12000" step="500" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Valeur dans 4 ans (€)</label>
+              <input type="number" id="peuValueFuture" value="5000" step="500" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Conso (L/100km)</label>
+              <input type="number" id="peuConso" value="7" step="0.1" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Essence (€/L)</label>
+              <input type="number" id="peuPrice" value="2" step="0.05" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Entretien (€/an)</label>
+              <input type="number" id="peuMaint" value="600" step="50" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Assurance (€/an)</label>
+              <input type="number" id="peuInsure" value="600" step="50" />
+            </div>
+          </div>
+        </div>
+
+        <!-- VE inputs -->
+        <div class="bg-white/[.02] rounded-xl p-4 border border-white/5">
+          <h3 class="text-sm font-bold mb-3 flex items-center gap-2"><span>⚡</span> Véhicule Électrique en LOA</h3>
+
+          <div class="mb-4">
+            <label class="text-xs text-muted block mb-1.5">Modèle (préremplit la mensualité)</label>
+            <select id="veModel" class="w-full bg-white/[.04] border border-white/10 text-ink p-3 rounded-lg font-medium text-sm focus:outline-none focus:border-accent/50"></select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Loyer (€/mois)</label>
+              <input type="number" id="veMonth" value="350" step="10" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Apport (€)</label>
+              <input type="number" id="veApport" value="4500" step="500" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Conso (kWh/100km)</label>
+              <input type="number" id="veConso" value="17" step="0.5" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Élec HC (€/kWh)</label>
+              <input type="number" id="vePrice" value="0.15" step="0.01" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Entretien (€/an)</label>
+              <input type="number" id="veMaint" value="150" step="50" />
+            </div>
+            <div>
+              <label class="text-xs text-muted block mb-1.5">Assurance (€/an)</label>
+              <input type="number" id="veInsure" value="700" step="50" />
+            </div>
+          </div>
+          <p class="text-[10px] text-muted mt-3 leading-relaxed">💡 Recharge maison heures creuses ~0,15 €/kWh (tarif EDF Bleu 2026). 5% des km en charge rapide payante non comptés.</p>
+        </div>
+
+        <!-- Result -->
+        <div id="tco-result" class="mt-6"></div>
+
+      </div>
+    </div>
+
+    <!-- Détail des coûts -->
+    <div class="glass rounded-2xl p-5">
+      <h3 class="font-bold mb-4 text-sm flex items-center gap-2"><span>🔍</span> Détail des coûts</h3>
+      <div id="tco-breakdown" class="space-y-3"></div>
+    </div>
+
+    <!-- Graphique -->
+    <div class="glass rounded-2xl p-5">
+      <h3 class="font-bold mb-4 text-sm flex items-center gap-2"><span>📈</span> Visualisation</h3>
+      <div class="relative h-64">
+        <canvas id="tcoChart"></canvas>
+      </div>
+    </div>
+
+  </section>
+
+  <footer class="mt-12 pt-6 border-t border-line text-center text-[10px] text-muted">
+    <p>Données mai 2026 · Prix LOA estimatifs · Vérifier en concession</p>
+    <p class="mt-1">Fait avec ⚡ pour aider à choisir</p>
+  </footer>
+
+</main>
+
+<!-- Modal détails -->
+<div id="modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-end md:items-center justify-center p-0 md:p-4" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="bg-surface w-full md:max-w-2xl md:rounded-2xl rounded-t-3xl max-h-[92vh] overflow-y-auto border-t md:border border-line">
+    <div class="sticky top-0 bg-surface/95 backdrop-blur border-b border-line p-4 flex items-center justify-between z-10">
+      <div>
+        <div id="modal-name" class="font-bold text-lg"></div>
+        <div id="modal-variant" class="text-xs text-muted"></div>
+      </div>
+      <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition">✕</button>
+    </div>
+    <div class="p-5" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+/* ============ DATA ============ */
+const CARS = [
+  {
+    id: 'tesla-y-phase1',
+    brand: 'Tesla',
+    name: 'Model Y',
+    variant: 'Phase 1 — Propulsion (déstockage)',
+    color: '#cc0000',
+    emoji: '🚗',
+    new: 33390,
+    loa: 350,
+    apport: 4500,
+    range: 455,
+    battery: 60,
+    dc: 170,
+    dcTime: 27,
+    ac: 11,
+    power: 295,
+    accel: 6.9,
+    weight: 1909,
+    dim: [4750, 1921, 1624],
+    trunk: 854,
+    trunkMax: 2158,
+    frunk: 117,
+    warranty: '8 ans / 160 000 km',
+    pac: true,
+    v2l: false,
+    bonus: true,
+    highlight: '💰 Devis réel reçu',
+    notes: 'Stock en déstockage limité. Vraie affaire : 350€/mois sur 4 ans/20k. Réseau Supercharger inclus. Pas de frunk d\'origine mais coffre énorme.'
+  },
+  {
+    id: 'tesla-y-juniper',
+    brand: 'Tesla',
+    name: 'Model Y',
+    variant: 'Juniper 2026 — Propulsion',
+    color: '#cc0000',
+    emoji: '🚗',
+    new: 44990,
+    loa: 499,
+    apport: 4500,
+    range: 534,
+    battery: 60,
+    dc: 175,
+    dcTime: 24,
+    ac: 11,
+    power: 299,
+    accel: 5.9,
+    weight: 1981,
+    dim: [4794, 1982, 1621],
+    trunk: 835,
+    trunkMax: 2118,
+    frunk: 117,
+    warranty: '8 ans / 160 000 km',
+    pac: true,
+    v2l: false,
+    bonus: true,
+    notes: 'Nouvelle version 2026 : suspensions revues, insonorisation, lumière en barre. Réseau Supercharger toujours imbattable.'
+  },
+  {
+    id: 'xpeng-g6',
+    brand: 'XPeng',
+    name: 'G6',
+    variant: 'Standard Range RWD',
+    color: '#00b4ff',
+    emoji: '🚙',
+    new: 42990,
+    loa: 459,
+    apport: 3550,
+    range: 470,
+    battery: 67.8,
+    dc: 215,
+    dcTime: 18,
+    ac: 11,
+    power: 252,
+    accel: 6.9,
+    weight: 2025,
+    dim: [4753, 1920, 1650],
+    trunk: 571,
+    trunkMax: 1374,
+    frunk: 0,
+    warranty: '8 ans / 160 000 km',
+    pac: true,
+    v2l: true,
+    bonus: false,
+    highlight: '⚡ Charge ultra rapide',
+    notes: 'Architecture 800V. Tout équipé de série (ADAS niv. 2, PAC, V2L). Pas éligible bonus écologique. Offre 359€/mois en 40k km, ajusté pour 80k.'
+  },
+  {
+    id: 'xpeng-g9',
+    brand: 'XPeng',
+    name: 'G9',
+    variant: 'Standard Range RWD',
+    color: '#00b4ff',
+    emoji: '🚙',
+    new: 59990,
+    loa: 620,
+    apport: 5500,
+    range: 460,
+    battery: 74.3,
+    dc: 260,
+    dcTime: 15,
+    ac: 11,
+    power: 313,
+    accel: 6.4,
+    weight: 2285,
+    dim: [4891, 1937, 1680],
+    trunk: 660,
+    trunkMax: 1576,
+    frunk: 0,
+    warranty: '8 ans / 160 000 km',
+    pac: true,
+    v2l: true,
+    bonus: false,
+    notes: 'SUV premium 800V. Le plus grand du panel. V2L 6 kW (groupe électrogène). Pas de bonus écologique.'
+  },
+  {
+    id: 'hyundai-ioniq5',
+    brand: 'Hyundai',
+    name: 'Ioniq 5',
+    variant: 'Creative 84 kWh Propulsion',
+    color: '#002c5f',
+    emoji: '🚗',
+    new: 52000,
+    loa: 720,
+    apport: 4800,
+    range: 570,
+    battery: 80,
+    dc: 263,
+    dcTime: 18,
+    ac: 11,
+    power: 229,
+    accel: 7.5,
+    weight: 2060,
+    dim: [4655, 1890, 1605],
+    trunk: 520,
+    trunkMax: 1580,
+    frunk: 24,
+    warranty: '8 ans / 160 000 km',
+    pac: true,
+    v2l: true,
+    bonus: true,
+    notes: '800V, design rétro-futuriste. V2L 3,6 kW = camping/bricolage. LOA cher, négocier via courtier (Vivacar, Beev).'
+  },
+  {
+    id: 'kia-ev6',
+    brand: 'Kia',
+    name: 'EV6',
+    variant: 'Air 84 kWh Propulsion',
+    color: '#05141f',
+    emoji: '🚗',
+    new: 47450,
+    loa: 560,
+    apport: 4000,
+    range: 582,
+    battery: 80,
+    dc: 258,
+    dcTime: 18,
+    ac: 11,
+    power: 229,
+    accel: 7.7,
+    weight: 2050,
+    dim: [4695, 1890, 1550],
+    trunk: 490,
+    trunkMax: 1290,
+    frunk: 52,
+    warranty: '7 ans / 150 000 km',
+    pac: false,
+    v2l: false,
+    bonus: true,
+    notes: 'Cousin technique de l\'Ioniq 5 mais plus sportif. Attention : PAC en option (1000€) + V2L en option (1400€) + garantie 7 ans seulement.'
+  },
+  {
+    id: 'byd-sealion7',
+    brand: 'BYD',
+    name: 'Sealion 7',
+    variant: 'Comfort RWD',
+    color: '#dc2626',
+    emoji: '🚙',
+    new: 46990,
+    loa: 559,
+    apport: 3500,
+    range: 482,
+    battery: 80,
+    dc: 150,
+    dcTime: 30,
+    ac: 11,
+    power: 313,
+    accel: 6.7,
+    weight: 2225,
+    dim: [4830, 1925, 1620],
+    trunk: 520,
+    trunkMax: 1789,
+    frunk: 0,
+    warranty: '8 ans / 160 000 km',
+    pac: true,
+    v2l: true,
+    bonus: false,
+    notes: 'Batterie Blade LFP (sûre, longue durée). Écran 15.6" rotatif. Pas de bonus écologique (Chine).'
+  },
+  {
+    id: 'renault-scenic',
+    brand: 'Renault',
+    name: 'Scenic E-Tech',
+    variant: 'Grande Autonomie 220 ch',
+    color: '#ffcc00',
+    emoji: '🚗',
+    new: 46990,
+    loa: 499,
+    apport: 4200,
+    range: 625,
+    battery: 87,
+    dc: 150,
+    dcTime: 37,
+    ac: 22,
+    power: 220,
+    accel: 7.9,
+    weight: 1917,
+    dim: [4470, 1864, 1571],
+    trunk: 545,
+    trunkMax: 1670,
+    frunk: 0,
+    warranty: '8 ans / 160 000 km',
+    pac: true,
+    v2l: true,
+    bonus: true,
+    highlight: '🇫🇷 Voiture européenne 2024',
+    notes: 'Le plus léger du panel (-300 kg). Charge AC 22 kW = recharge 2× plus rapide à la maison sur prise triphasée. Toit panoramique de série Iconic.'
+  },
+  {
+    id: 'peugeot-e3008',
+    brand: 'Peugeot',
+    name: 'e-3008',
+    variant: 'Allure 210 ch 73 kWh',
+    color: '#1a3a5c',
+    emoji: '🚗',
+    new: 44990,
+    loa: 470,
+    apport: 3500,
+    range: 527,
+    battery: 73,
+    dc: 160,
+    dcTime: 30,
+    ac: 11,
+    power: 210,
+    accel: 8.8,
+    weight: 2183,
+    dim: [4542, 1895, 1641],
+    trunk: 588,
+    trunkMax: 1663,
+    frunk: 0,
+    warranty: '8 ans / 160 000 km',
+    pac: false,
+    v2l: true,
+    bonus: true,
+    highlight: '🔄 Successeur direct',
+    notes: 'Le successeur direct de la 3008. Écran 21" panoramique. PAC en option (990€). Bonus + CEE cumulables.'
+  },
+  {
+    id: 'skoda-enyaq',
+    brand: 'Skoda',
+    name: 'Enyaq 85',
+    variant: '286 ch 77 kWh',
+    color: '#4ba82e',
+    emoji: '🚗',
+    new: 46270,
+    loa: 569,
+    apport: 3919,
+    range: 590,
+    battery: 77,
+    dc: 135,
+    dcTime: 28,
+    ac: 11,
+    power: 286,
+    accel: 6.7,
+    weight: 2141,
+    dim: [4658, 1879, 1622],
+    trunk: 585,
+    trunkMax: 1710,
+    frunk: 0,
+    warranty: '8 ans / 160 000 km',
+    pac: false,
+    v2l: false,
+    bonus: true,
+    notes: 'Famille-friendly (coffre, Simply Clever : parapluie, grattoir). PAC option 1120€. Restylage 2025 plus moderne.'
+  },
+  {
+    id: 'volvo-ex40',
+    brand: 'Volvo',
+    name: 'EX40',
+    variant: 'Single Motor Extended Range',
+    color: '#003057',
+    emoji: '🚗',
+    new: 46950,
+    loa: 535,
+    apport: 4800,
+    range: 576,
+    battery: 79,
+    dc: 200,
+    dcTime: 28,
+    ac: 11,
+    power: 252,
+    accel: 7.3,
+    weight: 2075,
+    dim: [4440, 1863, 1652],
+    trunk: 410,
+    trunkMax: 1328,
+    frunk: 0,
+    warranty: '8 ans / 160 000 km',
+    pac: true,
+    v2l: false,
+    bonus: true,
+    notes: 'Premium scandinave. Charge DC la plus rapide du panel (200 kW). Mais coffre le plus petit. Google built-in.'
+  },
+];
+
+/* ============ WEIGHTS (default) ============ */
+let weights = {
+  price: 30,
+  range: 20,
+  charge: 15,
+  space: 15,
+  perf: 10,
+  equip: 10,
+};
+
+const WEIGHT_LABELS = {
+  price: { label: '💰 Prix LOA', desc: 'Mensualité + apport' },
+  range: { label: '🔋 Autonomie', desc: 'Km WLTP' },
+  charge: { label: '⚡ Recharge', desc: 'Vitesse DC + AC maison' },
+  space: { label: '📦 Habitabilité', desc: 'Coffre + dimensions' },
+  perf: { label: '🏎️ Performance', desc: '0-100 + puissance' },
+  equip: { label: '🎁 Équipement', desc: 'PAC, V2L, garantie, bonus' },
+};
+
+/* ============ SCORING ============ */
+function normalize(value, min, max, invert = false) {
+  if (max === min) return 50;
+  let n = ((value - min) / (max - min)) * 100;
+  if (invert) n = 100 - n;
+  return Math.max(0, Math.min(100, n));
+}
+
+function computeSubscores(car) {
+  const allLoa = CARS.map(c => c.loa + c.apport / 48);
+  const minLoa = Math.min(...allLoa);
+  const maxLoa = Math.max(...allLoa);
+
+  const allRange = CARS.map(c => c.range);
+  const allDc = CARS.map(c => c.dc);
+  const allAcc = CARS.map(c => c.accel);
+  const allTrunk = CARS.map(c => c.trunk);
+
+  const loaTotal = car.loa + car.apport / 48;
+
+  const priceScore = normalize(loaTotal, minLoa, maxLoa, true);
+  const rangeScore = normalize(car.range, Math.min(...allRange), Math.max(...allRange));
+
+  const dcScore = normalize(car.dc, Math.min(...allDc), Math.max(...allDc));
+  const acScore = car.ac >= 22 ? 100 : car.ac >= 11 ? 70 : 40;
+  const chargeScore = dcScore * 0.7 + acScore * 0.3;
+
+  const trunkScore = normalize(car.trunk, Math.min(...allTrunk), Math.max(...allTrunk));
+  const dimScore = normalize(car.dim[0], 4400, 4900);
+  const spaceScore = trunkScore * 0.7 + dimScore * 0.3;
+
+  const accScore = normalize(car.accel, Math.min(...allAcc), Math.max(...allAcc), true);
+  const powScore = normalize(car.power, 200, 320);
+  const perfScore = accScore * 0.6 + powScore * 0.4;
+
+  let equipScore = 0;
+  if (car.pac) equipScore += 25;
+  if (car.v2l) equipScore += 20;
+  if (car.bonus) equipScore += 20;
+  if (car.frunk > 0) equipScore += 10;
+  if (car.ac >= 22) equipScore += 10;
+  if (car.warranty.includes('8 ans')) equipScore += 15;
+  else equipScore += 5;
+
+  return {
+    price: priceScore,
+    range: rangeScore,
+    charge: chargeScore,
+    space: spaceScore,
+    perf: perfScore,
+    equip: Math.min(100, equipScore),
+  };
+}
+
+function computeScore(car) {
+  const sub = computeSubscores(car);
+  const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+  const w = {};
+  Object.keys(weights).forEach(k => w[k] = weights[k] / totalWeight);
+
+  const score = sub.price * w.price + sub.range * w.range + sub.charge * w.charge +
+                sub.space * w.space + sub.perf * w.perf + sub.equip * w.equip;
+  return { score, sub };
+}
+
+/* ============ RENDER ============ */
+function renderWeights() {
+  const panel = document.getElementById('weights-panel');
+  panel.innerHTML = Object.entries(weights).map(([key, val]) => `
+    <div>
+      <div class="flex items-center justify-between mb-1.5">
+        <div>
+          <span class="text-sm font-semibold">${WEIGHT_LABELS[key].label}</span>
+          <span class="text-[10px] text-muted ml-1">${WEIGHT_LABELS[key].desc}</span>
+        </div>
+        <span class="text-sm font-bold text-accent tabular-nums">${val}%</span>
+      </div>
+      <input type="range" min="0" max="50" value="${val}" data-key="${key}" oninput="updateWeight(this)" class="w-full" />
+    </div>
+  `).join('');
+}
+
+function updateWeight(input) {
+  weights[input.dataset.key] = parseInt(input.value);
+  renderWeights();
+  renderCards();
+}
+
+function resetWeights() {
+  weights = { price: 30, range: 20, charge: 15, space: 15, perf: 10, equip: 10 };
+  renderWeights();
+  renderCards();
+}
+
+function renderCards() {
+  const ranked = CARS.map(car => ({ ...car, ...computeScore(car) }))
+    .sort((a, b) => b.score - a.score);
+
+  // Podium
+  const podium = document.getElementById('podium');
+  const order = [1, 0, 2];
+  podium.innerHTML = order.map(i => {
+    const car = ranked[i];
+    if (!car) return '';
+    const cls = i === 0 ? 'podium-1' : i === 1 ? 'podium-2' : 'podium-3';
+    const rank = i + 1;
+    const medal = ['🥇', '🥈', '🥉'][i];
+    const height = i === 0 ? 'pt-3 pb-4' : i === 1 ? 'pt-5 pb-4 mt-3' : 'pt-6 pb-3 mt-5';
+    return `
+      <button onclick="openModal('${car.id}')" class="${cls} ${height} rounded-2xl text-center transition hover:scale-[1.02] active:scale-[.98]">
+        <div class="text-2xl mb-1">${medal}</div>
+        <div class="text-[10px] text-muted uppercase tracking-wider">${car.brand}</div>
+        <div class="text-xs font-bold leading-tight px-1">${car.name}</div>
+        <div class="text-base font-black grad-text mt-1.5 tabular-nums">${car.score.toFixed(0)}</div>
+      </button>
+    `;
+  }).join('');
+
+  // Cards list
+  const list = document.getElementById('cards-list');
+  list.innerHTML = ranked.map((car, i) => {
+    const rank = i + 1;
+    const isTop = rank <= 3;
+    return `
+      <button onclick="openModal('${car.id}')" class="w-full text-left glass card-hover rounded-2xl p-4 border ${isTop ? 'border-accent/20' : 'border-line'}">
+        <div class="flex items-start gap-3">
+          <div class="flex-shrink-0 w-12 text-center">
+            <div class="text-2xl font-black ${isTop ? 'grad-text' : 'text-muted'} tabular-nums">${rank}</div>
+            ${car.highlight ? `<div class="text-[8px] text-accent font-bold uppercase mt-0.5">${car.highlight.split(' ')[0]}</div>` : ''}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="min-w-0">
+                <div class="text-[10px] uppercase tracking-wider text-muted">${car.brand}</div>
+                <div class="font-bold text-base truncate">${car.name}</div>
+                <div class="text-xs text-muted truncate">${car.variant}</div>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <div class="text-2xl font-black tabular-nums grad-text">${car.score.toFixed(0)}</div>
+                <div class="text-[9px] text-muted uppercase tracking-wider">/100</div>
+              </div>
+            </div>
+            <div class="score-bar-bg w-full">
+              <div class="score-bar" style="width: ${car.score}%"></div>
+            </div>
+            <div class="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[11px]">
+              <span class="text-muted">💰 <span class="text-ink font-semibold">${car.loa}€</span>/mois</span>
+              <span class="text-muted">🔋 <span class="text-ink font-semibold">${car.range}</span> km</span>
+              <span class="text-muted">⚡ <span class="text-ink font-semibold">${car.dc}</span> kW</span>
+              <span class="text-muted">📦 <span class="text-ink font-semibold">${car.trunk}</span> L</span>
+            </div>
+          </div>
+        </div>
+      </button>
+    `;
+  }).join('');
+}
+
+/* ============ MODAL ============ */
+let radarChart;
+function openModal(id) {
+  const car = CARS.find(c => c.id === id);
+  if (!car) return;
+  const sub = computeScore(car).sub;
+
+  document.getElementById('modal-name').textContent = `${car.brand} ${car.name}`;
+  document.getElementById('modal-variant').textContent = car.variant;
+
+  const body = document.getElementById('modal-body');
+  body.innerHTML = `
+    ${car.highlight ? `<div class="grad-bg border border-accent/20 rounded-xl p-3 mb-4 text-sm font-semibold">${car.highlight}</div>` : ''}
+
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <div class="bg-white/[.03] rounded-xl p-3 border border-white/5">
+        <div class="text-[10px] uppercase tracking-wider text-muted">LOA / mois</div>
+        <div class="text-2xl font-black tabular-nums mt-0.5">${car.loa}€</div>
+        <div class="text-[10px] text-muted mt-0.5">+ ${car.apport}€ apport</div>
+      </div>
+      <div class="bg-white/[.03] rounded-xl p-3 border border-white/5">
+        <div class="text-[10px] uppercase tracking-wider text-muted">Autonomie</div>
+        <div class="text-2xl font-black tabular-nums mt-0.5">${car.range}<span class="text-sm text-muted ml-1">km</span></div>
+        <div class="text-[10px] text-muted mt-0.5">WLTP</div>
+      </div>
+    </div>
+
+    <div class="relative h-56 mb-5 bg-white/[.02] rounded-xl p-3 border border-white/5">
+      <canvas id="radarChart"></canvas>
+    </div>
+
+    <h4 class="text-xs uppercase tracking-widest text-muted mb-3">Caractéristiques</h4>
+    <div class="space-y-2 text-sm mb-5">
+      ${specRow('Dimensions', `${car.dim[0]} × ${car.dim[1]} × ${car.dim[2]} mm`)}
+      ${specRow('Coffre', `${car.trunk} L → ${car.trunkMax} L (banquette)${car.frunk ? ` + frunk ${car.frunk} L` : ''}`)}
+      ${specRow('Batterie', `${car.battery} kWh utile`)}
+      ${specRow('Recharge DC', `${car.dc} kW → 10-80% en ${car.dcTime} min`)}
+      ${specRow('Recharge AC', `${car.ac} kW (maison)`)}
+      ${specRow('Puissance', `${car.power} ch`)}
+      ${specRow('0-100 km/h', `${car.accel} s`)}
+      ${specRow('Poids', `${car.weight} kg`)}
+      ${specRow('Garantie batterie', car.warranty)}
+    </div>
+
+    <h4 class="text-xs uppercase tracking-widest text-muted mb-3">Équipement</h4>
+    <div class="flex flex-wrap gap-2 mb-5">
+      ${badge('Pompe à chaleur', car.pac)}
+      ${badge('V2L', car.v2l)}
+      ${badge('Bonus écologique', car.bonus)}
+      ${badge('Frunk', car.frunk > 0)}
+      ${badge('AC 22 kW', car.ac >= 22)}
+    </div>
+
+    <h4 class="text-xs uppercase tracking-widest text-muted mb-3">Scores détaillés</h4>
+    <div class="space-y-3 mb-5">
+      ${Object.entries(sub).map(([k, v]) => `
+        <div>
+          <div class="flex items-center justify-between mb-1 text-xs">
+            <span>${WEIGHT_LABELS[k].label}</span>
+            <span class="font-bold tabular-nums">${v.toFixed(0)}</span>
+          </div>
+          <div class="score-bar-bg w-full"><div class="score-bar" style="width:${v}%"></div></div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="bg-white/[.03] rounded-xl p-4 border border-white/5">
+      <div class="text-[10px] uppercase tracking-wider text-muted mb-1">📝 Notes</div>
+      <p class="text-sm leading-relaxed">${car.notes}</p>
+    </div>
+  `;
+
+  document.getElementById('modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Radar
+  setTimeout(() => {
+    const ctx = document.getElementById('radarChart');
+    if (radarChart) radarChart.destroy();
+    radarChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: ['Prix', 'Autonomie', 'Recharge', 'Espace', 'Perf', 'Équipt'],
+        datasets: [{
+          data: [sub.price, sub.range, sub.charge, sub.space, sub.perf, sub.equip],
+          backgroundColor: 'rgba(0,255,136,.15)',
+          borderColor: '#00ff88',
+          borderWidth: 2,
+          pointBackgroundColor: '#00ff88',
+          pointRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { display: false, stepSize: 25 },
+            grid: { color: 'rgba(255,255,255,.08)' },
+            angleLines: { color: 'rgba(255,255,255,.08)' },
+            pointLabels: { color: '#a1a1aa', font: { size: 11, weight: '600' } }
+          }
+        }
+      }
+    });
+  }, 50);
+}
+
+function specRow(label, value) {
+  return `<div class="flex items-start justify-between gap-3 py-1.5 border-b border-white/5">
+    <span class="text-muted">${label}</span>
+    <span class="text-right font-medium">${value}</span>
+  </div>`;
+}
+
+function badge(label, ok) {
+  return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${ok ? 'bg-accent/10 text-accent border border-accent/20' : 'bg-white/5 text-muted border border-white/10'}">
+    ${ok ? '✓' : '✗'} ${label}
+  </span>`;
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.add('hidden');
+  document.body.style.overflow = '';
+  if (radarChart) { radarChart.destroy(); radarChart = null; }
+}
+
+/* ============ TABS ============ */
+function switchTab(tab) {
+  const compare = document.getElementById('section-compare');
+  const tco = document.getElementById('section-tco');
+  const tabC = document.getElementById('tab-compare');
+  const tabT = document.getElementById('tab-tco');
+  if (tab === 'compare') {
+    compare.classList.remove('hidden');
+    tco.classList.add('hidden');
+    tabC.classList.add('tab-active');
+    tabC.classList.remove('text-muted');
+    tabT.classList.remove('tab-active');
+    tabT.classList.add('text-muted');
+  } else {
+    compare.classList.add('hidden');
+    tco.classList.remove('hidden');
+    tabT.classList.add('tab-active');
+    tabT.classList.remove('text-muted');
+    tabC.classList.remove('tab-active');
+    tabC.classList.add('text-muted');
+    updateTCO();
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ============ TCO ============ */
+let tcoChart;
+function populateVeModelSelect() {
+  const sel = document.getElementById('veModel');
+  sel.innerHTML = CARS.map(c => `<option value="${c.id}" ${c.id==='tesla-y-phase1'?'selected':''}>${c.brand} ${c.name} — ${c.loa}€/mois</option>`).join('');
+  sel.addEventListener('change', e => {
+    const c = CARS.find(c => c.id === e.target.value);
+    if (c) {
+      document.getElementById('veMonth').value = c.loa;
+      document.getElementById('veApport').value = c.apport;
+      updateTCO();
+    }
+  });
+}
+
+function fmt(n) {
+  return Math.round(n).toLocaleString('fr-FR') + ' €';
+}
+
+function updateTCO() {
+  const km = +document.getElementById('kmYear').value;
+  const years = +document.getElementById('years').value;
+  const totalKm = km * years;
+
+  const peuValueNow = +document.getElementById('peuValueNow').value;
+  const peuValueFuture = +document.getElementById('peuValueFuture').value;
+  const peuConso = +document.getElementById('peuConso').value;
+  const peuPrice = +document.getElementById('peuPrice').value;
+  const peuMaint = +document.getElementById('peuMaint').value;
+  const peuInsure = +document.getElementById('peuInsure').value;
+
+  const veMonth = +document.getElementById('veMonth').value;
+  const veApport = +document.getElementById('veApport').value;
+  const veConso = +document.getElementById('veConso').value;
+  const vePrice = +document.getElementById('vePrice').value;
+  const veMaint = +document.getElementById('veMaint').value;
+  const veInsure = +document.getElementById('veInsure').value;
+
+  // Peugeot
+  const peuDecote = peuValueNow - peuValueFuture;
+  const peuFuel = (peuConso / 100) * totalKm * peuPrice;
+  const peuMaintTotal = peuMaint * years;
+  const peuInsureTotal = peuInsure * years;
+  const peuTotal = peuDecote + peuFuel + peuMaintTotal + peuInsureTotal;
+
+  // VE
+  const veLoaTotal = veMonth * 12 * years + veApport;
+  const veEnergy = (veConso / 100) * totalKm * vePrice;
+  const veMaintTotal = veMaint * years;
+  const veInsureTotal = veInsure * years;
+  const veTotal = veLoaTotal + veEnergy + veMaintTotal + veInsureTotal;
+
+  const diff = peuTotal - veTotal;
+  const winner = diff > 0 ? 've' : 'peu';
+
+  // Result block
+  const result = document.getElementById('tco-result');
+  result.innerHTML = `
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="rounded-xl p-4 ${winner==='peu'?'bg-accent/10 border border-accent/30':'bg-white/[.03] border border-white/5'}">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs text-muted">Peugeot 3008</span>
+          ${winner==='peu'?'<span class="text-[10px] font-bold text-accent">★ MOINS CHER</span>':''}
+        </div>
+        <div class="text-2xl font-black tabular-nums">${fmt(peuTotal)}</div>
+        <div class="text-[10px] text-muted mt-1">sur ${years} ans</div>
+      </div>
+      <div class="rounded-xl p-4 ${winner==='ve'?'bg-accent/10 border border-accent/30':'bg-white/[.03] border border-white/5'}">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs text-muted">VE LOA</span>
+          ${winner==='ve'?'<span class="text-[10px] font-bold text-accent">★ MOINS CHER</span>':''}
+        </div>
+        <div class="text-2xl font-black tabular-nums">${fmt(veTotal)}</div>
+        <div class="text-[10px] text-muted mt-1">sur ${years} ans</div>
+      </div>
+    </div>
+
+    <div class="grad-bg border border-accent/20 rounded-xl p-5 text-center animate-pulse-glow">
+      <div class="text-xs uppercase tracking-widest text-muted mb-2">VERDICT</div>
+      <div class="text-3xl font-black grad-text tabular-nums">${fmt(Math.abs(diff))}</div>
+      <div class="text-sm mt-2 font-semibold">
+        ${diff > 0 ? `économisés sur ${years} ans en passant au VE ⚡` : `de surcoût sur ${years} ans avec le VE`}
+      </div>
+      <div class="text-xs text-muted mt-2">soit ${fmt(Math.abs(diff)/years/12)}/mois ${diff > 0 ? 'gagnés' : 'en plus'}</div>
+    </div>
+  `;
+
+  // Breakdown
+  const breakdown = document.getElementById('tco-breakdown');
+  breakdown.innerHTML = `
+    <div class="grid grid-cols-2 gap-2 text-xs">
+      <div class="font-bold text-muted uppercase tracking-wider text-[10px] pb-2 border-b border-white/10">Peugeot 3008 ⛽</div>
+      <div class="font-bold text-muted uppercase tracking-wider text-[10px] pb-2 border-b border-white/10">VE ⚡</div>
+
+      ${tcoRow('Décote / LOA', peuDecote, veLoaTotal, '🔻')}
+      ${tcoRow('Carburant / Élec', peuFuel, veEnergy, '⚡')}
+      ${tcoRow('Entretien', peuMaintTotal, veMaintTotal, '🔧')}
+      ${tcoRow('Assurance', peuInsureTotal, veInsureTotal, '🛡️')}
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/10">
+      <div class="bg-white/[.04] rounded-lg p-2.5 text-center">
+        <div class="text-[10px] uppercase tracking-wider text-muted">Total Peugeot</div>
+        <div class="font-black tabular-nums text-base mt-0.5">${fmt(peuTotal)}</div>
+      </div>
+      <div class="bg-white/[.04] rounded-lg p-2.5 text-center">
+        <div class="text-[10px] uppercase tracking-wider text-muted">Total VE</div>
+        <div class="font-black tabular-nums text-base mt-0.5">${fmt(veTotal)}</div>
+      </div>
+    </div>
+  `;
+
+  // Chart
+  const ctx = document.getElementById('tcoChart');
+  if (tcoChart) tcoChart.destroy();
+  tcoChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Peugeot 3008 ⛽', 'VE LOA ⚡'],
+      datasets: [
+        { label: 'Décote / LOA', data: [peuDecote, veLoaTotal], backgroundColor: '#ff3366' },
+        { label: 'Carburant / Élec', data: [peuFuel, veEnergy], backgroundColor: '#ffaa00' },
+        { label: 'Entretien', data: [peuMaintTotal, veMaintTotal], backgroundColor: '#00d4ff' },
+        { label: 'Assurance', data: [peuInsureTotal, veInsureTotal], backgroundColor: '#00ff88' },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#a1a1aa', font: { size: 10 }, padding: 12, boxWidth: 10 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + fmt(ctx.parsed.y) } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color: '#a1a1aa' } },
+        y: { stacked: true, grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#a1a1aa', callback: v => (v/1000) + 'k' } }
+      }
+    }
+  });
+}
+
+function tcoRow(label, peuVal, veVal, icon) {
+  const winner = peuVal < veVal ? 'peu' : 've';
+  return `
+    <div class="py-2 border-b border-white/5 ${winner==='peu'?'text-accent':''}">
+      <div class="text-[10px] text-muted">${icon} ${label}</div>
+      <div class="font-bold tabular-nums">${fmt(peuVal)}</div>
+    </div>
+    <div class="py-2 border-b border-white/5 ${winner==='ve'?'text-accent':''}">
+      <div class="text-[10px] text-muted">${icon} ${label}</div>
+      <div class="font-bold tabular-nums">${fmt(veVal)}</div>
+    </div>
+  `;
+}
+
+/* ============ INIT ============ */
+document.addEventListener('DOMContentLoaded', () => {
+  renderWeights();
+  renderCards();
+  populateVeModelSelect();
+
+  // TCO listeners
+  ['kmYear','years','peuValueNow','peuValueFuture','peuConso','peuPrice','peuMaint','peuInsure','veMonth','veApport','veConso','vePrice','veMaint','veInsure'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateTCO);
+  });
+
+  // Close modal on Esc
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+});
+</script>
+</body>
+</html>
